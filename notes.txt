@@ -1,0 +1,19 @@
+ * 1. One-to-One
+ * One record ↔ One record
+ * 👉 Implementation:
+ * One table holds a foreign key
+ * That foreign key is unique
+ * 2.One-to-Many
+ * One record → Many records
+ * 👉 Implementation:
+ * “Many” side holds the foreign key
+ * 3. Many-to-Many
+ * Correct Mental Model
+ * Many-to-Many ALWAYS has a join table in the database
+ * Even if Prisma hides it.
+ * In many-to-many:
+ * Relationship is stored in a separate table
+ * "
+ * In one-to-one and one-to-many, we use foreign keys in one table.
+ * But in many-to-many, both sides have arrays, and Prisma creates a hidden join table to manage the relationship instead of storing a single foreign key.
+ 

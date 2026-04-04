@@ -1,0 +1,281 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ----------------------------------- Notes TO start -------------------------------
+
+/**
+ * 1. One-to-One
+ * One record ↔ One record
+ * 👉 Implementation:
+ * One table holds a foreign key
+ * That foreign key is unique
+ * 2.One-to-Many
+ * One record → Many records
+ * 👉 Implementation:
+ * “Many” side holds the foreign key
+ * 3. Many-to-Many
+ * Correct Mental Model
+ * Many-to-Many ALWAYS has a join table in the database
+ * Even if Prisma hides it.
+ * In many-to-many:
+ * Relationship is stored in a separate table
+ * "
+ * In one-to-one and one-to-many, we use foreign keys in one table.
+ * But in many-to-many, both sides have arrays, and Prisma creates a hidden join table to manage the relationship instead of storing a single foreign key.
+ * "
+ */
+// ------------------------------- Todo App ------------------------------------------------------
+
+// model User {
+//   id        String   @id @default(uuid())
+//   username  String   @unique
+//   password  String
+//   todos     Todo[]
+//   createdAt DateTime @default(now())
+// }
+
+// model Todo {
+//   id          String  @id @default(uuid())
+//   title       String
+//   description String?
+//   completed   Boolean @default(false)
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+//   userId    String
+//   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   @@index([userId])
+// }
+
+// ------------------------------------   Todo with Tags -------------------------------
+
+// model Todo {
+//   id          String  @id @default(uuid())
+//   title       String
+//   description String?
+//   completed   Boolean @default(false)
+
+//   userId String
+//   user   User   @relation(fields: [userId], references: [id])
+//   tags   Tag[]
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   @@index([userId])
+// }
+
+// model Tag {
+//   id    String @id @default(uuid())
+//   name  String @unique
+//   todos Todo[]
+// }
+
+// //----------------------- May to many student-courses      
+
+// model Student {
+//   id      String   @id @default(uuid())
+//   name    String
+//   courses Course[]
+
+//   createdAt DateTime @default(now())
+// }
+
+// model Course {
+//   id       String    @id @default(uuid())
+//   name     String
+//   strudent Student[]
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+// // ---------------------- E-commerce -------------------------------------
+
+// model Euser {
+//   id       String @id @default(uuid())
+//   username String @unique
+//   password String
+
+//   orders    Order[]
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+// model Product {
+//   id          String      @id @default(uuid())
+//   name        String
+//   description String?
+//   productId   String
+//   orderItem   OrderItem[]
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+// model Order {
+//   id     String      @id @default(uuid())
+//   userId String
+//   user   Euser       @relation(fields: [userId], references: [id])
+//   items  OrderItem[]
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+// model OrderItem {
+//   id        String  @id @default(uuid())
+//   orderId   String
+//   productId String
+//   product   Product @relation(fields: [productId], references: [id])
+//   order     Order   @relation(fields: [orderId], references: [id])
+// }
+
+// // -------------------------------- Music playlists  ------------------------------
+
+// model Muser {
+//   id       String @id @default(uuid())
+//   username String @unique
+//   password String
+
+//   playlists Playlist[]
+// }
+
+// model Song {
+//   id   String @id @default(uuid())
+//   name String
+
+//   listedOn PlaylistSong[]
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+// model Playlist {
+//   id     String         @id @default(uuid())
+//   userId String
+//   user   Muser          @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   songs  PlaylistSong[]
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+// model PlaylistSong {
+//   id String @id @default(uuid())
+
+//   songId      String
+//   playllistId String
+//   song        Song     @relation(fields: [songId], references: [id])
+//   playlist    Playlist @relation(fields: [playllistId], references: [id])
+
+//   position Int
+
+//   @@unique([songId, playllistId])
+//   @@index([songId])
+//   @@index([playllistId])
+// }
+
+// // ------------------------------- Teams Schmea -----------------------
+
+// model Tuser {
+//   id       String @id @default(uuid())
+//   username String @unique
+//   password String
+
+//   teamMember TeamMember[]
+// }
+
+// model Team {
+//   id String @id @default(uuid())
+
+//   members TeamMember[]
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+// model TeamMember {
+//   id String @id @default(uuid())
+
+//   userId    String
+//   teamId    String
+//   team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+//   user      Tuser    @relation(fields: [userId], references: [id])
+//   role      Role     @default(MEMBER)
+//   createdAt DateTime @default(now())
+
+//   @@unique([teamId, userId])
+//   @@index([teamId])
+//   @@index([userId])
+// }
+
+// enum Role {
+//   ADMIN
+//   MEMBER
+// }
+
+// -------------------------- Social Media --------------------------------------------
+
+model User {
+  id        String @id @default(uuid())
+  username  String @unique
+  password  String
+  postLikes Like[]
+  posts     Post[]
+
+  follower  Follow[] @relation("followers")
+  following Follow[] @relation("followings")
+}
+
+model Post {
+  id      String  @id @default(uuid())
+  Image   String?
+  caption String?
+  userId  String
+  user    User    @relation(fields: [userId], references: [id])
+  likes   Like[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Like {
+  id     String @id @default(uuid())
+  userId String
+  postId String
+  user   User   @relation(fields: [userId], references: [id])
+  post   Post   @relation(fields: [postId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+model Follow {
+  id          String @id @default(uuid())
+  followerId  String
+  followingId String
+
+  follower  User @relation("followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("followings", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
