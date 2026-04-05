@@ -4,6 +4,7 @@ const userRouter = express.Router();
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { userSignupSchema } from "../types/index.js";
+import authenticateJwt from "../midlleware/authenticateJwt.js";
 const SECRET = process.env.JWT_SECRET!;
 
 userRouter.post("/signup", async (req, res) => {
@@ -53,13 +54,27 @@ userRouter.post("/signin", async (req, res) => {
     // let validUser = false;
     const validUser = await bcrypt.compare(password, user.password);
 
-    if (!validUser)
-      res.status(401).json({ message: "Invalid Credentials", validUser, user });
-
+    if (!validUser) res.status(401).json({ message: "Invalid Credentials" });
     const token = jwt.sign(user.id, SECRET);
     res.status(200).json({ messgae: "Logged In", token });
   } catch (error) {
     res.status(500).send(`Internal Server Error ${error}`);
+  }
+});
+
+userRouter.post("/follow", authenticateJwt, async (req, res) => {
+  try {
+    const { followId } = req.body;
+    const userId = req.headers.user as string;
+    const followSuccess = await prisma.follow.create({
+      data: {
+        followerId: userId,
+        followingId: followId,
+      },
+    });
+    res.status(201).json({ message: "Follow Done", followSuccess });
+  } catch (error) {
+    res.status(500).send(`Internal Server Error`);
   }
 });
 
