@@ -13,7 +13,7 @@ userRouter.post("/signup", async (req, res) => {
     if (!parsedData.success)
       return res.status(401).send(parsedData.error.format());
 
-    const { username, password } = req.body;
+    const { username, password } = parsedData.data;
 
     const userExist = await prisma.user.findUnique({
       where: {
@@ -30,7 +30,7 @@ userRouter.post("/signup", async (req, res) => {
         password: hashedPassword,
       },
     });
-    const token = jwt.sign(user.id, SECRET);
+    const token = jwt.sign({ userId: user.id }, SECRET, { expiresIn: "7d" }); //signa lways in object form with key
     res.status(201).json({ message: "User Created", token });
   } catch (error) {
     res.status(500).send(`Internal Server Error ${error}`);
@@ -43,7 +43,7 @@ userRouter.post("/signin", async (req, res) => {
     if (!parsedData.success)
       return res.status(401).send(parsedData.error.flatten());
 
-    const { username, password } = req.body;
+    const { username, password } = parsedData.data;
     const user = await prisma.user.findUnique({
       where: {
         username,
@@ -54,7 +54,8 @@ userRouter.post("/signin", async (req, res) => {
     // let validUser = false;
     const validUser = await bcrypt.compare(password, user.password);
 
-    if (!validUser) res.status(401).json({ message: "Invalid Credentials" });
+    if (!validUser)
+      return res.status(401).json({ message: "Invalid Credentials" });
     const token = jwt.sign(user.id, SECRET);
     res.status(200).json({ messgae: "Logged In", token });
   } catch (error) {
@@ -65,7 +66,30 @@ userRouter.post("/signin", async (req, res) => {
 userRouter.post("/follow", authenticateJwt, async (req, res) => {
   try {
     const { followId } = req.body;
-    const userId = req.headers.user as string;
+    const userId = req.userId;
+    console.log(userId);
+    const alreadyFollowed = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId: userId,
+          followingId: followId,
+        },
+      },
+    });
+    if (alreadyFollowed) {
+      const unfollowSuccess = await prisma.follow.delete({
+        where: {
+          followerId_followingId: {
+            followerId: userId,
+            followingId: followId,
+          },
+        },
+      });
+
+      return res
+        .status(201)
+        .json({ message: "User Unfollowed", unfollowSuccess });
+    }
     const followSuccess = await prisma.follow.create({
       data: {
         followerId: userId,
@@ -74,7 +98,7 @@ userRouter.post("/follow", authenticateJwt, async (req, res) => {
     });
     res.status(201).json({ message: "Follow Done", followSuccess });
   } catch (error) {
-    res.status(500).send(`Internal Server Error`);
+    res.status(500).send(`Internal Server Error ${error}`);
   }
 });
 
