@@ -7,12 +7,12 @@ const authenticateJwt = (req: Request, res: Response, next: NextFunction) => {
     const header = req.headers.authorization;
     if (!header) return res.status(401).json({ message: "Not Authorised" });
     const token = header.split(" ")[1]!;
-    const decoded = jwt.verify(token, SECRET) as string;
-    console.log(decoded);
-    req.userId = decoded;
+    // console.log(token);
+    const decoded = jwt.verify(token, SECRET) as { userId: string };
+    req.userId = decoded.userId;
     next();
   } catch (error) {
-    res.status(500).send(`Internal Server Error`);
+    res.status(500).send(`Internal Server Error ${error}`);
   }
 };
 

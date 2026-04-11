@@ -1,5 +1,5 @@
 import express from "express";
-import { postSchema } from "../types/index.js";
+import { likeSchema, postCommentSchema, postSchema } from "../types/index.js";
 import authenticateJwt from "../midlleware/authenticateJwt.js";
 import { prisma } from "../db.js";
 const postRouter = express.Router();
@@ -36,7 +36,9 @@ postRouter.post("/create", authenticateJwt, async (req, res) => {
 
 postRouter.post("/like", authenticateJwt, async (req, res) => {
   try {
-    const { postId } = req.body;
+    const parsedData = likeSchema.safeParse(req.body);
+    if (!parsedData.success) return res.status(400).send("Validation Error");
+    const { postId } = parsedData.data;
     const userId = req.userId;
     const alreadyLiked = await prisma.like.findUnique({
       where: {
@@ -75,7 +77,8 @@ postRouter.delete("/delete", authenticateJwt, async (req, res) => {
   try {
     const { postId } = req.body;
     const userId = req.userId;
-    const succes = await prisma.post.delete({
+    const succes = await prisma.post.deleteMany({
+      //Prisma .delete() only accepts unique fields
       where: {
         id: postId,
         userId, // only the user can delte its post
@@ -84,6 +87,30 @@ postRouter.delete("/delete", authenticateJwt, async (req, res) => {
     res.status(201).json({ message: "Post Delted", succes });
   } catch (error) {
     res.status(500).send(`Internla Server Error ${error}`);
+  }
+});
+
+postRouter.post("/comment", authenticateJwt, async (req, res) => {
+  try {
+    const parsedData = postCommentSchema.safeParse(req.body);
+    if (!parsedData.success)
+      return res.status(401).json({
+        message: `Please provid valid length comment ${parsedData.error.flatten()}`,
+      });
+    const { content, parentId, postId } = parsedData.data;
+    console.log(content, parentId, req.userId, postId);
+    const comment = await prisma.comment.create({
+      data: {
+        content,
+        parentId: parentId || null, // the "" string is not valid for no realtion in databsae so null is the option if its a first comment
+        userId: req.userId,
+        postId,
+      },
+    });
+    res.status(201).json({ message: "Comment Added" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(`Internal Server Error ${error}`);
   }
 });
 
