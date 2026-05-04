@@ -8,7 +8,7 @@ postRouter.post("/create", authenticateJwt, async (req, res) => {
   try {
     const parsedData = postSchema.safeParse(req.body);
     if (!parsedData.success)
-      return res.status(401).send(parsedData.error.flatten());
+      return res.status(400).send(parsedData.error.flatten());
     const { image, caption } = parsedData.data;
     const userId = req.userId;
     const post = await prisma.post.create({
@@ -25,14 +25,33 @@ postRouter.post("/create", authenticateJwt, async (req, res) => {
   }
 });
 
-// postRouter.get("/feed", authenticateJwt, async (req, res) => {
-//   try {
-//     const feeds = await prisma.post.findMany({});
-//     return res.status(500).json({ message: "Feeds success", feeds });
-//   } catch (error) {
-//     res.status(500).json({ message: `Internal Server error ${error}` });
-//   }
-// });
+postRouter.get("/feed", authenticateJwt, async (req, res) => {
+  try {
+    const feeds = await prisma.post.findMany({
+      where: {
+        user: {
+          follower: {
+            // follwingId:req.userId
+            some: {
+              followerId: req.userId,
+            },
+          },
+        },
+      },
+      include: {
+        user: true,
+        likes: true,
+        comments: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return res.status(200).json({ message: "Feeds success", feeds });
+  } catch (error) {
+    res.status(500).json({ message: `Internal Server error ${error}` });
+  }
+});
 
 postRouter.post("/like", authenticateJwt, async (req, res) => {
   try {
@@ -58,7 +77,7 @@ postRouter.post("/like", authenticateJwt, async (req, res) => {
           },
         },
       });
-      return res.status(201).json({ message: "Like Removed" });
+      return res.status(200).json({ message: "Like Removed" });
     }
     const postLiked = await prisma.like.create({
       data: {
@@ -84,7 +103,7 @@ postRouter.delete("/delete", authenticateJwt, async (req, res) => {
         userId, // only the user can delte its post
       },
     });
-    res.status(201).json({ message: "Post Delted", succes });
+    res.status(200).json({ message: "Post Delted", succes });
   } catch (error) {
     res.status(500).send(`Internla Server Error ${error}`);
   }
@@ -94,7 +113,7 @@ postRouter.post("/comment", authenticateJwt, async (req, res) => {
   try {
     const parsedData = postCommentSchema.safeParse(req.body);
     if (!parsedData.success)
-      return res.status(401).json({
+      return res.status(400).json({
         message: `Please provid valid length comment ${parsedData.error.flatten()}`,
       });
     const { content, parentId, postId } = parsedData.data;

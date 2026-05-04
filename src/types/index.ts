@@ -23,3 +23,13 @@ export const followSchema = z.object({
 export const likeSchema = z.object({
   postId: z.string().min(2),
 });
+
+export const chatSchema = z.object({
+  memberIds: z.array(z.string()),
+  name: z.string().optional(),
+});
+
+export const chatMessageSchema = z.object({
+  // conversationId: z.string(),
+  content: z.string(),
+});

@@ -11,7 +11,7 @@ userRouter.post("/signup", async (req, res) => {
   try {
     const parsedData = userSignupSchema.safeParse(req.body);
     if (!parsedData.success)
-      return res.status(401).send(parsedData.error.format());
+      return res.status(400).send(parsedData.error.format());
 
     const { username, password } = parsedData.data;
 
@@ -41,7 +41,7 @@ userRouter.post("/signin", async (req, res) => {
   try {
     const parsedData = userSignupSchema.safeParse(req.body);
     if (!parsedData.success)
-      return res.status(401).send(parsedData.error.flatten());
+      return res.status(400).send(parsedData.error.flatten());
 
     const { username, password } = parsedData.data;
     const user = await prisma.user.findUnique({
@@ -56,7 +56,7 @@ userRouter.post("/signin", async (req, res) => {
 
     if (!validUser)
       return res.status(403).json({ message: "Invalid Credentials" });
-    const token = jwt.sign({ userId: user.id }, SECRET); // should be given as object value with  key
+    const token = jwt.sign({ userId: user.id }, SECRET, { expiresIn: "7d" }); // should be given as object value with  key
     res.status(200).json({ messgae: "Logged In", token });
   } catch (error) {
     res.status(500).send(`Internal Server Error ${error}`);
