@@ -21,14 +21,16 @@ chatRouter.post("/conversations", authenticateJwt, async (req, res) => {
       },
       select: {
         id: true,
+        username: true,
       },
     });
 
     const validIds = userIds.length === uniqueMembers.length;
     if (!validIds) return res.status(403).send("Users not valid");
-
+    const otherUser = userIds.filter((user) => user.id !== req.userId)[0]!;
     const conversation = await prisma.conversation.create({
       data: {
+        name: otherUser.username,
         members: {
           create: uniqueMembers.map((id) => {
             return {
@@ -47,51 +49,6 @@ chatRouter.post("/conversations", authenticateJwt, async (req, res) => {
 
 chatRouter.get("/conversations", authenticateJwt, async (req, res) => {
   try {
-    // const result = await prisma.$transaction(async (tx) => {
-    //   const conversations = await tx.conversation.findMany({
-    //     where: {
-    //       members: {
-    //         some: {
-    //           userId: req.userId,
-    //         },
-    //       },
-    //     },
-    //     select: {
-    //       id: true,
-    //       lastMessageId: true,
-    //       name: true,
-    //     },
-    //   });
-
-    //   if (!conversations)
-    //     return res.status(403).send("Error In Making conversations");
-
-    //   return conversations.forEach(async (conversation) => {
-    //     return await tx.conversation.findMany({
-    //       where: {
-    //         id: conversation.id,
-    //       },
-    //       select: {
-    //         messages: {
-    //           where: {
-    //             id: conversation.lastMessageId!,
-    //           },
-    //           select: {
-    //             id: true,
-    //             content: true,
-    //             updatedAt: true,
-    //             sender: {
-    //               select: {
-    //                 username: true,
-    //               },
-    //             },
-    //           },
-    //         },
-    //       },
-    //     });
-    //   });
-    // });
-
     const result = await prisma.conversation.findMany({
       where: {
         members: {
@@ -137,10 +94,17 @@ chatRouter.get("/conversations", authenticateJwt, async (req, res) => {
         updatedAt: "desc",
       },
     });
-
+    const resultDTO = result.map((conversation) => {
+      return {
+        id: conversation.id,
+        username: conversation.members[0]?.user.username,
+        lastMessage: conversation.lastMessage?.content,
+        updatedAt: conversation.updatedAt,
+      };
+    });
     res
       .status(200)
-      .json({ message: "fetched convesations", conversations: result });
+      .json({ message: "fetched convesations", conversations: resultDTO });
   } catch (error) {
     res.status(500).send(`Internal server Error ${error}`);
   }
@@ -255,10 +219,10 @@ chatRouter.get(
         take: 20,
         orderBy: [
           {
-            createdAt: "desc",
+            createdAt: "asc",
           },
           {
-            id: "desc",
+            id: "asc",
           },
         ],
         ...(cursorId && {
@@ -266,8 +230,22 @@ chatRouter.get(
           skip: 1,
         }),
       });
+      const updatedCursorId = messages[messages.length - 1]?.id;
 
-      res.status(200).json({ message: "fetched succesfully", messages });
+      const messageDTO = messages.map((message) => {
+        return {
+          id: message.id,
+          content: message.content,
+          username: message.sender.username,
+          createdAt: message.createdAt,
+        };
+      });
+
+      res.status(200).json({
+        message: "fetched succesfully",
+        messages: messageDTO,
+        cursorId: updatedCursorId,
+      });
     } catch (error) {
       res.status(500).send(`Internal Server Error ${error}`);
     }

@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { followSchema, userSignupSchema } from "../types/index.js";
 import authenticateJwt from "../midlleware/authenticateJwt.js";
+// import { skip } from "node:test";
 const SECRET = process.env.JWT_SECRET!;
 
 userRouter.post("/signup", async (req, res) => {
@@ -60,6 +61,22 @@ userRouter.post("/signin", async (req, res) => {
     res.status(200).json({ messgae: "Logged In", token });
   } catch (error) {
     res.status(500).send(`Internal Server Error ${error}`);
+  }
+});
+
+userRouter.get("/getUsers", authenticateJwt, async (req, res) => {
+  try {
+    let cursorId = req.query.cursorId! as string;
+    const users = await prisma.user.findMany({
+      take: 20,
+      ...(cursorId && { cursor: { id: cursorId }, skip: 1 }),
+    });
+    if (!users) return res.status(404).send("No users Found");
+    cursorId = users[users.length - 1]?.id!;
+    res.status(200).json({ message: "Fetcehd Succesfully", users, cursorId });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server error ");
   }
 });
 

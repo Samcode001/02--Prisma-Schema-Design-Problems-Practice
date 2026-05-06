@@ -350,27 +350,3 @@ model Message {
   @@index([conversationId, createdAt])
 }
 
-// [
-//   {
-//     id: "conv_1",
-//     name: null,
-//     updatedAt: "...",
-//     members: [
-//       {
-//         user: {
-//           id: "u2",
-//           username: "alex"
-//         }
-//       }
-//     ],
-//     lastMessage: {
-//       id: "m44",
-//       content: "bro where are you",
-//       createdAt: "...",
-//       sender: {
-//         id: "u2",
-//         username: "alex"
-//       }
-//     }
-//   }
-// ]
