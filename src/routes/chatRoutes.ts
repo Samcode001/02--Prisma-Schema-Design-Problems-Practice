@@ -162,6 +162,14 @@ chatRouter.post(
             content,
             userId: req.userId,
           },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
         });
 
         if (!message.id) throw new Error("Error on creating message");
@@ -177,10 +185,18 @@ chatRouter.post(
 
         return message;
       });
-
+      const messageDTO = {
+        id: result.id,
+        content: result.content,
+        username: result.sender.username,
+        createdAt: result.createdAt,
+      };
       res
         .status(201)
-        .json({ message: "message created succesfully", messageId: result.id });
+        .json({
+          message: "message created succesfully",
+          newMessage: messageDTO,
+        });
     } catch (error) {
       res.status(500).send(`Internal Server Error ${error}`);
     }
@@ -219,10 +235,10 @@ chatRouter.get(
         take: 20,
         orderBy: [
           {
-            createdAt: "asc",
+            createdAt: "desc",
           },
           {
-            id: "asc",
+            id: "desc",
           },
         ],
         ...(cursorId && {
@@ -243,7 +259,7 @@ chatRouter.get(
 
       res.status(200).json({
         message: "fetched succesfully",
-        messages: messageDTO,
+        messages: messageDTO.reverse(),
         cursorId: updatedCursorId,
       });
     } catch (error) {

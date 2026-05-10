@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { followSchema, userSignupSchema } from "../types/index.js";
 import authenticateJwt from "../midlleware/authenticateJwt.js";
+import type { asyncWrapProviders } from "node:async_hooks";
 // import { skip } from "node:test";
 const SECRET = process.env.JWT_SECRET!;
 
@@ -77,6 +78,33 @@ userRouter.get("/getUsers", authenticateJwt, async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).send("Internal Server error ");
+  }
+});
+
+userRouter.get("/getUser", authenticateJwt, async (req, res) => {
+  try {
+    const conversationId = req.query.conversationId! as string;
+    const result = await prisma.chatMember.findUnique({
+      where: {
+        userId_conversationId: {
+          userId: req.userId,
+          conversationId: conversationId,
+        },
+      },
+      select: {
+        user: {
+          select: {
+            username: true,
+            id: true,
+          },
+        },
+      },
+    });
+    if (!result) return res.status(404).send("No user Found");
+    res.status(200).json({ user: result.user });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
   }
 });
 
