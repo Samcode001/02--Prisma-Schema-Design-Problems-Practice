@@ -161,6 +161,8 @@ chatRouter.post(
             conversationId,
             content,
             userId: req.userId,
+            seen: false,
+            status: "sent",
           },
           include: {
             sender: {
@@ -190,13 +192,13 @@ chatRouter.post(
         content: result.content,
         username: result.sender.username,
         createdAt: result.createdAt,
+        status: result.status,
+        seen: result.seen,
       };
-      res
-        .status(201)
-        .json({
-          message: "message created succesfully",
-          newMessage: messageDTO,
-        });
+      res.status(201).json({
+        message: "message created succesfully",
+        newMessage: messageDTO,
+      });
     } catch (error) {
       res.status(500).send(`Internal Server Error ${error}`);
     }
@@ -254,6 +256,8 @@ chatRouter.get(
           content: message.content,
           username: message.sender.username,
           createdAt: message.createdAt,
+          status: message.status,
+          seen: message.seen,
         };
       });
 
@@ -267,6 +271,70 @@ chatRouter.get(
     }
   },
 );
+
+chatRouter.post("/messages/updateStatus", authenticateJwt, async (req, res) => {
+  try {
+    const { messageId } = req.body;
+    const status = await prisma.message.update({
+      where: {
+        id: messageId,
+      },
+      data: {
+        status: "delivered",
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+    });
+
+    const messageDTO = {
+      id: status.id,
+      content: status.content,
+      username: status.sender.username,
+      createdAt: status.createdAt,
+      status: status.status,
+      seen: status.seen,
+    };
+    if (!status) return res.status(404).send("No Message Found");
+
+    res
+      .status(200)
+      .json({
+        message: "Message Updated Successfully",
+        updatedMessage: messageDTO,
+      });
+  } catch (error) {}
+});
+
+// route for any kind of bulk update for sycrnozing the databse with current demans of keys
+chatRouter.post("/bulk-update", authenticateJwt, async (req, res) => {
+  try {
+    const status = await prisma.message.updateMany({
+      where: { status: "sent" },
+      data: {
+        status: "delivered",
+      },
+    });
+    // const seen = await prisma.message.updateMany({
+    //   where: {
+    //     seen: null,
+    //   },
+    //   data: {
+    //     seen: true,
+    //   },
+    // });
+
+    res.status(200).json({ Message: "REcords Updated Succesfully", status });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("internal Server Error");
+  }
+});
 
 // chatRouter.get("/allChats", authenticateJwt, async (req, res) => {
 //   try {

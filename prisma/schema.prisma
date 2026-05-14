@@ -334,10 +334,12 @@ model ChatMember {
 }
 
 model Message {
-  id             String @id @default(uuid())
+  id             String  @id @default(uuid())
   content        String
   userId         String
   conversationId String
+  status         String
+  seen           Boolean
 
   lastMessage  Conversation? @relation("LastMessage")
   conversation Conversation  @relation("ConversationMessages", fields: [conversationId], references: [id])
@@ -349,4 +351,3 @@ model Message {
   @@index([userId])
   @@index([conversationId, createdAt])
 }
-
